@@ -144,6 +144,8 @@
             top: 70%;
             right: 15%;
             animation-delay: 5s;
+            pointer-events: auto; /* Make planet 2 clickable */
+            cursor: pointer;
         }
 
         .planet3 {
@@ -459,6 +461,32 @@
             text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
         }
 
+        /* New Historical Timeline styles */
+        .timeline {
+            margin-top: 20px;
+            padding: 18px;
+            background: rgba(45, 45, 68, 0.6); /* Slightly darker background */
+            border-radius: 12px;
+            border: 1px dashed #a78bfa;
+        }
+
+        .timeline-header {
+            font-family: 'Space Mono', monospace;
+            color: #4ecdc4; /* Cyan color */
+            font-size: 1.1em;
+            text-align: center;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(78, 205, 196, 0.5);
+        }
+
+        .timeline-item {
+            color: #e0e7ff;
+            font-size: 0.85em;
+            line-height: 1.6;
+            list-style-type: '🚀 '; /* Custom bullet point */
+            margin-left: 20px;
+        }
+
         .signature {
             margin-top: 25px;
             text-align: center;
@@ -531,6 +559,31 @@
             cursor: pointer;
             border: none;
             box-shadow: 0 2px 10px rgba(167, 139, 250, 0.5);
+        }
+        
+        /* Secret Message Styles */
+        .secret-message {
+            position: fixed;
+            bottom: 120px; /* Position above audio controls */
+            right: 30px;
+            width: 250px;
+            padding: 15px;
+            background: #ff6b35; /* Orange to contrast with background */
+            color: #000;
+            border-radius: 10px;
+            text-align: center;
+            font-family: 'Space Mono', monospace;
+            font-size: 0.9em;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+            box-shadow: 0 0 20px rgba(255, 107, 53, 0.8);
+            z-index: 100;
+        }
+
+        .secret-message.revealed {
+            opacity: 1;
+            visibility: visible;
         }
 
         /* Loading screen */
@@ -605,51 +658,42 @@
     </style>
 </head>
 <body>
-    <!-- Loading screen -->
     <div class="loading-screen" id="loadingScreen">
         <div class="loader"></div>
         <div class="loading-text">Initializing Cosmic Experience...</div>
     </div>
 
-    <!-- Background gradient -->
     <div class="bg-gradient"></div>
 
-    <!-- Nebula effect -->
     <div class="nebula">
         <div class="nebula-cloud" style="width: 400px; height: 400px; background: radial-gradient(circle, rgba(102, 126, 234, 0.4), transparent); top: 10%; left: 15%;"></div>
         <div class="nebula-cloud" style="width: 500px; height: 500px; background: radial-gradient(circle, rgba(157, 78, 221, 0.3), transparent); bottom: 10%; right: 10%; animation-delay: 5s;"></div>
         <div class="nebula-cloud" style="width: 350px; height: 350px; background: radial-gradient(circle, rgba(118, 75, 162, 0.4), transparent); top: 50%; left: 50%; animation-delay: 10s;"></div>
     </div>
 
-    <!-- Animated starfield -->
     <div class="stars" id="starfield"></div>
 
-    <!-- Particle system -->
     <div class="particles" id="particles"></div>
 
-    <!-- Floating planets -->
     <div class="planets">
         <div class="planet planet1"></div>
-        <div class="planet planet2"></div>
+        <div class="planet planet2" id="secretPlanet"></div>
         <div class="planet planet3"></div>
         <div class="planet planet4"></div>
     </div>
 
-    <!-- Birthday card -->
     <div class="card-container">
         <div class="card" id="birthdayCard">
-            <!-- Front of card -->
             <div class="card-face card-front">
                 <div class="card-front-content">
                     <div class="equation">E = mc²</div>
-                    <div class="subtitle">Energy = My Love × (Speed of Light)²</div>
+                    <div class="subtitle">Energy = Mass × (Speed of Light)²</div>
                     <div class="dino-icon">🦕</div>
-                    <div class="equation" style="font-size: 1.5em;">On this day, Comet Z passed through the sky in 1999</div>
+                    <div class="equation" style="font-size: 1.5em;">On this day in 1999, Comet Z passed through the sky</div>
                 </div>
                 <div class="click-hint">⟨ Click to open the space-time continuum ⟩</div>
             </div>
 
-            <!-- Back of card -->
             <div class="card-face card-back">
                 <div class="header">⭐ HAPPY BIRTHDAY Z! ⭐</div>
                 
@@ -676,7 +720,6 @@
                     <div class="formula">🎁 Happiness ∝ You × Me</div>
                     <div class="formula">🎉 Fun = ∫(Moments) dt from 0 to ∞</div>
                 </div>
-
                 <div class="signature">
                     <p>From: Mika 137Ω-SN</p>
                     <p style="margin-top: 10px; font-size: 0.9em;">
@@ -687,13 +730,15 @@
         </div>
     </div>
 
-    <!-- Audio controls -->
+    <div class="secret-message" id="secretMessage">
+        INSIDE JOKE ALERT! You're the 'only' person in the galaxy who still says "Rad!" 🤘 Love you, nerd!
+    </div>
+    
     <div class="audio-controls">
         <button class="audio-btn" id="audioToggle" title="Toggle Music">🎵</button>
         <input type="range" class="volume-slider" id="volumeSlider" min="0" max="100" value="50" title="Volume">
     </div>
 
-    <!-- Background music (uses a space-themed royalty-free track) -->
     <audio id="bgMusic" loop>
         <source src="cosmic_music.mp3" type="audio/mpeg">
     </audio>
@@ -775,6 +820,40 @@
                 card.style.transform = 'rotateX(0) rotateY(0) scale(1)';
             }
         });
+
+        // Secret Message Functionality
+        const secretPlanet = document.getElementById('secretPlanet');
+        const secretMessage = document.getElementById('secretMessage');
+        let secretRevealed = false;
+
+        secretPlanet.addEventListener('click', function() {
+            if (!secretRevealed) {
+                // Show the message
+                secretMessage.classList.add('revealed');
+                secretRevealed = true;
+                
+                // Vibrate the message box (optional, for fun!)
+                secretMessage.style.animation = 'shake 0.3s';
+                
+                // Hide the message after 7 seconds
+                setTimeout(() => {
+                    secretMessage.classList.remove('revealed');
+                    secretMessage.style.animation = 'none';
+                    secretRevealed = false;
+                }, 7000); 
+            }
+        });
+        
+        // Add a small shake animation for effect
+        const styleSheet = document.createElement('style');
+        styleSheet.innerText = `
+            @keyframes shake {
+                0%, 100% { transform: translateX(0); }
+                20%, 60% { transform: translateX(-5px); }
+                40%, 80% { transform: translateX(5px); }
+            }
+        `;
+        document.head.appendChild(styleSheet);
 
         // Audio controls
         const bgMusic = document.getElementById('bgMusic');
